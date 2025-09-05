@@ -33,7 +33,6 @@
     }
 
     h1 { font-size: 1.8em; margin-bottom: 10px; }
-
     #rank { font-size: 1.2em; margin-bottom: 20px; color: #ffcccb; }
 
     .penguin-wrapper {
@@ -50,7 +49,6 @@
     }
 
     .penguin-wrapper:active { transform: scale(0.95); }
-
     .penguin-wrapper img { width: 100%; height: 100%; object-fit: cover; }
 
     #counter { font-size: 1.5em; font-weight: bold; margin-top: 15px; }
@@ -170,7 +168,6 @@
     const rank = document.getElementById("rank");
     const penguin = document.getElementById("penguin");
 
-    // Апгрейди: cost = ціна, perClick = скільки додає
     const upgrades = [
       { cost: 50, perClick: 1, bought: false },
       { cost: 150, perClick: 3, bought: false },
@@ -178,15 +175,21 @@
       { cost: 1000, perClick: 10, bought: false }
     ];
 
-    // Завантаження гри
+    // Завантаження гри з localStorage
     window.onload = function() {
       const savedCoins = localStorage.getItem("coins");
       const savedPerClick = localStorage.getItem("coinsPerClick");
-      const savedUpgrades = JSON.parse(localStorage.getItem("upgradesBought") || "[]");
-
       if(savedCoins) count = parseInt(savedCoins);
       if(savedPerClick) coinsPerClick = parseInt(savedPerClick);
-      savedUpgrades.forEach(i => { if(upgrades[i]) upgrades[i].bought = true; });
+
+      // Визначаємо, які апгрейди вже куплені на основі coinsPerClick
+      let remainingCoins = coinsPerClick;
+      upgrades.forEach(up => {
+        if(remainingCoins > 1) {
+          up.bought = true;
+          remainingCoins -= up.perClick;
+        }
+      });
 
       counter.innerText = count;
       updateRank();
@@ -204,8 +207,6 @@
     document.getElementById("saveBtn").addEventListener("click", () => {
       localStorage.setItem("coins", count);
       localStorage.setItem("coinsPerClick", coinsPerClick);
-      const boughtIndexes = upgrades.map((u,i) => u.bought ? i : null).filter(i=>i!==null);
-      localStorage.setItem("upgradesBought", JSON.stringify(boughtIndexes));
       alert("Result saved!");
     });
 
@@ -222,7 +223,7 @@
       penguin.appendChild(spark);
       setTimeout(() => spark.remove(), 600);
 
-      renderUpgrades(); // щоб кнопки активувалися при достатній кількості монет
+      renderUpgrades(); // кнопки активуються при достатній кількості монет
     });
 
     // Меню
@@ -245,12 +246,16 @@
       const list = document.getElementById("upgradesList");
       list.innerHTML = "";
       upgrades.forEach((up, i) => {
-        if(up.bought) return; // приховуємо куплені
         const btn = document.createElement("button");
         btn.className = "upgrade-button";
-        btn.innerText = `+${up.perClick} coins per click - ${up.cost} coins`;
-        btn.disabled = count < up.cost;
-        btn.addEventListener("click", () => buyUpgrade(i));
+        if(up.bought) {
+          btn.innerText = `+${up.perClick} coins per click - Bought ✅`;
+          btn.disabled = true;
+        } else {
+          btn.innerText = `+${up.perClick} coins per click - ${up.cost} coins`;
+          btn.disabled = count < up.cost;
+          btn.addEventListener("click", () => buyUpgrade(i));
+        }
         list.appendChild(btn);
       });
     }
