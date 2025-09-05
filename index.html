@@ -15,13 +15,11 @@
       padding: 20px;
       color: #fff;
     }
-
     @keyframes gradientShift {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
     .container {
       max-width: 400px;
       margin: auto;
@@ -31,10 +29,8 @@
       box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
       background-color: rgba(0, 0, 0, 0.3);
     }
-
     h1 { font-size: 1.8em; margin-bottom: 10px; }
     #rank { font-size: 1.2em; margin-bottom: 20px; color: #ffcccb; }
-
     .penguin-wrapper {
       width: 200px;
       height: 200px;
@@ -47,12 +43,9 @@
       transition: transform 0.1s ease-in-out;
       position: relative;
     }
-
     .penguin-wrapper:active { transform: scale(0.95); }
     .penguin-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-
     #counter { font-size: 1.5em; font-weight: bold; margin-top: 15px; }
-
     .spark {
       position: absolute;
       width: 10px;
@@ -62,12 +55,10 @@
       animation: pop 0.6s forwards ease-out;
       pointer-events: none;
     }
-
     @keyframes pop {
       0% { transform: scale(1); opacity: 1; }
       100% { transform: scale(2.5); opacity: 0; }
     }
-
     .menu {
       display: flex;
       justify-content: space-evenly;
@@ -79,7 +70,6 @@
       background-color: rgba(0, 0, 0, 0.6);
       padding: 10px;
     }
-
     .menu button {
       padding: 10px 20px;
       font-size: 1.2em;
@@ -89,9 +79,7 @@
       border-radius: 8px;
       cursor: pointer;
     }
-
     .menu button:hover { background-color: #e60000; }
-
     .upgrade-container {
       margin-top: 20px;
       border: 2px solid #ff0000;
@@ -99,9 +87,7 @@
       background-color: rgba(0, 0, 0, 0.3);
       display: none;
     }
-
     .upgrade-container p { font-size: 1.2em; color: #fff; }
-
     .upgrade-button {
       padding: 10px 20px;
       font-size: 1.2em;
@@ -113,9 +99,7 @@
       margin-top: 5px;
       display: block;
     }
-
     .upgrade-button:hover { background-color: #e6b800; }
-
     .close-upgrade {
       margin-top: 10px;
       color: #ff0000;
@@ -123,7 +107,6 @@
       text-decoration: underline;
       display: block;
     }
-
     #saveBtn {
       margin-top: 20px;
       padding: 10px 20px;
@@ -135,7 +118,6 @@
       font-size: 1.2em;
       display: inline-block;
     }
-
     #saveBtn:hover { background-color: #e60000; }
   </style>
 </head>
@@ -172,23 +154,21 @@
       { cost: 50, perClick: 1, bought: false },
       { cost: 150, perClick: 3, bought: false },
       { cost: 500, perClick: 6, bought: false },
-      { cost: 1000, perClick: 10, bought: false }
+      { cost: 1000, perClick: 10, bought: false } // новий апгрейд
     ];
 
-    // Завантаження гри з localStorage
+    // Завантаження гри
     window.onload = function() {
       const savedCoins = localStorage.getItem("coins");
       const savedPerClick = localStorage.getItem("coinsPerClick");
+      const savedUpgrades = JSON.parse(localStorage.getItem("upgradesBought") || "[]");
+
       if(savedCoins) count = parseInt(savedCoins);
       if(savedPerClick) coinsPerClick = parseInt(savedPerClick);
 
-      // Визначаємо, які апгрейди вже куплені на основі coinsPerClick
-      let remainingCoins = coinsPerClick;
-      upgrades.forEach(up => {
-        if(remainingCoins > 1) {
-          up.bought = true;
-          remainingCoins -= up.perClick;
-        }
+      // Встановлюємо bought для тих апгрейдів, які були куплені
+      savedUpgrades.forEach(i => {
+        if(upgrades[i]) upgrades[i].bought = true;
       });
 
       counter.innerText = count;
@@ -203,14 +183,14 @@
       else rank.innerText = "Level: Pingvi-Legend 🔥";
     }
 
-    // Збереження гри
     document.getElementById("saveBtn").addEventListener("click", () => {
       localStorage.setItem("coins", count);
       localStorage.setItem("coinsPerClick", coinsPerClick);
+      const boughtIndexes = upgrades.map((u,i) => u.bought ? i : null).filter(i=>i!==null);
+      localStorage.setItem("upgradesBought", JSON.stringify(boughtIndexes));
       alert("Result saved!");
     });
 
-    // Клік по пінгвіну + ефект
     penguin.addEventListener("click", (e) => {
       count += coinsPerClick;
       counter.innerText = count;
@@ -223,10 +203,9 @@
       penguin.appendChild(spark);
       setTimeout(() => spark.remove(), 600);
 
-      renderUpgrades(); // кнопки активуються при достатній кількості монет
+      renderUpgrades();
     });
 
-    // Меню
     document.getElementById("pingvinBtn").addEventListener("click", () => {
       document.querySelector(".container").style.display = "block";
       document.getElementById("upgradeMenu").style.display = "none";
@@ -264,10 +243,14 @@
       const up = upgrades[index];
       if(count >= up.cost) {
         count -= up.cost;
-        coinsPerClick += up.perClick; // додаємо, а не замінюємо
+        coinsPerClick += up.perClick;
         up.bought = true;
         counter.innerText = count;
         updateRank();
+
+        const boughtIndexes = upgrades.map((u,i) => u.bought ? i : null).filter(i=>i!==null);
+        localStorage.setItem("upgradesBought", JSON.stringify(boughtIndexes));
+
         renderUpgrades();
         alert(`Upgrade purchased! Now +${coinsPerClick} coins per click`);
       } else {
