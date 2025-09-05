@@ -170,18 +170,24 @@
     const rank = document.getElementById("rank");
     const penguin = document.getElementById("penguin");
 
+    // Апгрейди: cost = ціна, perClick = скільки додає
     const upgrades = [
-      { cost: 50, perClick: 2 },
-      { cost: 150, perClick: 5 },
-      { cost: 500, perClick: 10 }
+      { cost: 50, perClick: 1, bought: false },
+      { cost: 150, perClick: 3, bought: false },
+      { cost: 500, perClick: 6, bought: false },
+      { cost: 1000, perClick: 10, bought: false }
     ];
 
-    // Load saved game
+    // Завантаження гри
     window.onload = function() {
       const savedCoins = localStorage.getItem("coins");
       const savedPerClick = localStorage.getItem("coinsPerClick");
+      const savedUpgrades = JSON.parse(localStorage.getItem("upgradesBought") || "[]");
+
       if(savedCoins) count = parseInt(savedCoins);
       if(savedPerClick) coinsPerClick = parseInt(savedPerClick);
+      savedUpgrades.forEach(i => { if(upgrades[i]) upgrades[i].bought = true; });
+
       counter.innerText = count;
       updateRank();
       renderUpgrades();
@@ -194,14 +200,16 @@
       else rank.innerText = "Level: Pingvi-Legend 🔥";
     }
 
-    // Save game
+    // Збереження гри
     document.getElementById("saveBtn").addEventListener("click", () => {
       localStorage.setItem("coins", count);
       localStorage.setItem("coinsPerClick", coinsPerClick);
+      const boughtIndexes = upgrades.map((u,i) => u.bought ? i : null).filter(i=>i!==null);
+      localStorage.setItem("upgradesBought", JSON.stringify(boughtIndexes));
       alert("Result saved!");
     });
 
-    // Penguin click with spark effect
+    // Клік по пінгвіну + ефект
     penguin.addEventListener("click", (e) => {
       count += coinsPerClick;
       counter.innerText = count;
@@ -213,9 +221,11 @@
       spark.style.top = `${e.offsetY}px`;
       penguin.appendChild(spark);
       setTimeout(() => spark.remove(), 600);
+
+      renderUpgrades(); // щоб кнопки активувалися при достатній кількості монет
     });
 
-    // Menu toggle
+    // Меню
     document.getElementById("pingvinBtn").addEventListener("click", () => {
       document.querySelector(".container").style.display = "block";
       document.getElementById("upgradeMenu").style.display = "none";
@@ -235,9 +245,10 @@
       const list = document.getElementById("upgradesList");
       list.innerHTML = "";
       upgrades.forEach((up, i) => {
+        if(up.bought) return; // приховуємо куплені
         const btn = document.createElement("button");
         btn.className = "upgrade-button";
-        btn.innerText = `Buy ${up.perClick} coins per click - ${up.cost} coins`;
+        btn.innerText = `+${up.perClick} coins per click - ${up.cost} coins`;
         btn.disabled = count < up.cost;
         btn.addEventListener("click", () => buyUpgrade(i));
         list.appendChild(btn);
@@ -248,13 +259,12 @@
       const up = upgrades[index];
       if(count >= up.cost) {
         count -= up.cost;
-        coinsPerClick = up.perClick;
+        coinsPerClick += up.perClick; // додаємо, а не замінюємо
+        up.bought = true;
         counter.innerText = count;
         updateRank();
-        localStorage.setItem("coins", count);
-        localStorage.setItem("coinsPerClick", coinsPerClick);
         renderUpgrades();
-        alert("Upgrade purchased!");
+        alert(`Upgrade purchased! Now +${coinsPerClick} coins per click`);
       } else {
         alert("Not enough Pingvi Coins!");
       }
